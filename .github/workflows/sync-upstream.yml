@@ -36,8 +36,8 @@ jobs:
           # Get the merge base between current main and upstream main
           MERGE_BASE=$(git merge-base HEAD upstream/main)
           
-          # Check if there are any changes in upstream
-          if git diff --quiet $MERGE_BASE upstream/main -- .github/ modules/ includes.container/ .gitignore .gitattributes; then
+          # Check if there are any changes in upstream for files we sync
+          if git diff --quiet $MERGE_BASE upstream/main -- .github/workflows/ .github/dependabot.yml modules/50-install-debs.yml modules/80-set-image-abroot-config.yml includes.container/; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "No changes detected in upstream template"
           else
@@ -73,12 +73,10 @@ jobs:
           fi
           
           # Commit the changes
-          git commit -m "sync: Update from upstream template (Vanilla-OS/custom-image)
-
-          Synced template files from Vanilla-OS/custom-image.
-          This includes workflow updates, module templates, and container includes.
-          
-          Custom files like recipe.yml and README.md are preserved."
+          git commit -m "sync: Update from upstream template (Vanilla-OS/custom-image)" \
+                     -m "Synced template files from Vanilla-OS/custom-image." \
+                     -m "This includes workflow updates, module templates, and container includes." \
+                     -m "Custom files like recipe.yml and README.md are preserved."
       
       - name: Push changes
         if: steps.check_changes.outputs.has_changes == 'true'
