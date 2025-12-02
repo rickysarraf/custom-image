@@ -53,15 +53,25 @@ jobs:
           git checkout -b $BRANCH_NAME
       
       - name: Merge upstream changes
+        id: merge_changes
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           # Try to merge upstream changes for template files only
           # Exclude recipe.yml and README.md as they contain customizations
           
-          # Create a temporary branch to cherry-pick specific files
-          git checkout upstream/main -- .github/workflows/ .github/dependabot.yml || true
-          git checkout upstream/main -- modules/50-install-debs.yml modules/80-set-image-abroot-config.yml || true
-          git checkout upstream/main -- includes.container/ || true
+          # Checkout specific files from upstream
+          set +e  # Don't exit on error
+          
+          git checkout upstream/main -- .github/workflows/ .github/dependabot.yml
+          WORKFLOW_EXIT=$?
+          
+          git checkout upstream/main -- modules/50-install-debs.yml modules/80-set-image-abroot-config.yml
+          MODULES_EXIT=$?
+          
+          git checkout upstream/main -- includes.container/
+          INCLUDES_EXIT=$?
+          
+          set -e  # Re-enable exit on error
           
           # Stage the changes
           git add -A
@@ -69,28 +79,28 @@ jobs:
           # Check if there are changes to commit
           if git diff --staged --quiet; then
             echo "No changes to commit after selective merge"
-            exit 0
+            echo "has_commits=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_commits=true" >> $GITHUB_OUTPUT
+            # Commit the changes
+            git commit -m "sync: Update from upstream template (Vanilla-OS/custom-image)" \
+                       -m "Synced template files from Vanilla-OS/custom-image." \
+                       -m "This includes workflow updates, module templates, and container includes." \
+                       -m "Custom files like recipe.yml and README.md are preserved."
           fi
-          
-          # Commit the changes
-          git commit -m "sync: Update from upstream template (Vanilla-OS/custom-image)" \
-                     -m "Synced template files from Vanilla-OS/custom-image." \
-                     -m "This includes workflow updates, module templates, and container includes." \
-                     -m "Custom files like recipe.yml and README.md are preserved."
       
       - name: Push changes
-        if: steps.check_changes.outputs.has_changes == 'true'
+        if: steps.check_changes.outputs.has_changes == 'true' && steps.merge_changes.outputs.has_commits == 'true'
         run: |
           git push origin $BRANCH_NAME
       
       - name: Create Pull Request
-        if: steps.check_changes.outputs.has_changes == 'true'
+        if: steps.check_changes.outputs.has_changes == 'true' && steps.merge_changes.outputs.has_commits == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr create \
-            --title "Sync with upstream template" \
-            --body "This PR syncs changes from the upstream Vanilla-OS/custom-image template repository.
+          cat <<'EOF' > pr_body.md
+          This PR syncs changes from the upstream Vanilla-OS/custom-image template repository.
 
           ## Changes
           This automated PR includes updates to:
@@ -108,6 +118,11 @@ jobs:
           ## Review Required
           Please review the changes carefully before merging. Some updates might require adjustments to your custom configuration.
           
-          Upstream repository: https://github.com/Vanilla-OS/custom-image" \
+          Upstream repository: https://github.com/Vanilla-OS/custom-image
+          EOF
+          
+          gh pr create \
+            --title "Sync with upstream template" \
+            --body-file pr_body.md \
             --head $BRANCH_NAME \
             --base main
