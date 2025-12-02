@@ -64,11 +64,9 @@ jobs:
           # Exclude recipe.yml and README.md as they contain customizations
           
           # Checkout specific files from upstream (allow failures for missing files)
-          set +e
           for path in $SYNC_PATHS; do
             git checkout upstream/main -- "$path" 2>/dev/null || echo "Warning: Could not checkout $path from upstream"
           done
-          set -e
           
           # Stage the changes
           git add -A
