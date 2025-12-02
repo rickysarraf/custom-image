@@ -13,6 +13,10 @@ jobs:
       contents: write
       pull-requests: write
     
+    env:
+      # Files and directories to sync from upstream
+      SYNC_PATHS: ".github/workflows/ .github/dependabot.yml modules/50-install-debs.yml modules/80-set-image-abroot-config.yml includes.container/"
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,7 +41,7 @@ jobs:
           MERGE_BASE=$(git merge-base HEAD upstream/main)
           
           # Check if there are any changes in upstream for files we sync
-          if git diff --quiet $MERGE_BASE upstream/main -- .github/workflows/ .github/dependabot.yml modules/50-install-debs.yml modules/80-set-image-abroot-config.yml includes.container/; then
+          if git diff --quiet $MERGE_BASE upstream/main -- $SYNC_PATHS; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "No changes detected in upstream template"
           else
@@ -59,19 +63,12 @@ jobs:
           # Try to merge upstream changes for template files only
           # Exclude recipe.yml and README.md as they contain customizations
           
-          # Checkout specific files from upstream
-          set +e  # Don't exit on error
-          
-          git checkout upstream/main -- .github/workflows/ .github/dependabot.yml
-          WORKFLOW_EXIT=$?
-          
-          git checkout upstream/main -- modules/50-install-debs.yml modules/80-set-image-abroot-config.yml
-          MODULES_EXIT=$?
-          
-          git checkout upstream/main -- includes.container/
-          INCLUDES_EXIT=$?
-          
-          set -e  # Re-enable exit on error
+          # Checkout specific files from upstream (allow failures for missing files)
+          set +e
+          for path in $SYNC_PATHS; do
+            git checkout upstream/main -- "$path" 2>/dev/null || echo "Warning: Could not checkout $path from upstream"
+          done
+          set -e
           
           # Stage the changes
           git add -A
