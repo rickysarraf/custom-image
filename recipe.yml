@@ -36,6 +36,7 @@ stages:
       - btop
       - bpytop
       - net-tools
+      - kitty-terminfo
 
   - name: example-commands # Sample module demonstrating the Shell module with custom commands
     type: shell
