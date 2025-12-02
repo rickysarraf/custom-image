@@ -28,6 +28,18 @@ If your image is successfully built, you can then point ABRoot to your custom im
 - Change the "name" entry from something like `vanilla-os/desktop` to `your-github-name/your-image-name` (for example `taukakao/custom`).  [**Note**: All characters must be in lowercase.]
 - Now, Run `abroot upgrade` to switch to your custom image.
 
+## Staying in Sync with Upstream
+
+This repository includes an automated workflow to keep in sync with the upstream [Vanilla-OS/custom-image](https://github.com/Vanilla-OS/custom-image) template repository.
+
+- `.github/workflows/sync-upstream.yml`: This workflow automatically checks for updates from the upstream template repository weekly and creates a pull request when changes are detected.
+  - Runs automatically every Monday at 00:00 UTC
+  - Can be manually triggered from the Actions tab
+  - Syncs template files (workflows, modules, includes) while preserving your customizations in `recipe.yml` and `README.md`
+  - Creates a pull request for you to review before merging the changes
+
+You can also manually sync with upstream at any time by running the "Sync with Upstream Template" workflow from the Actions tab.
+
 ## Explore
 
 Now, that you are aware of the basics, let's explore the files and directories present in this repository:
@@ -36,6 +48,7 @@ Now, that you are aware of the basics, let's explore the files and directories p
   - It uses the [`vib-gh-action`](https://github.com/Vanilla-OS/vib-gh-action) to build the recipe and upload it as an artifact. The generated artifact is then built using Docker's actions and pushed to GHCR (**Note**: The image with the respective branch tags is published to GHCR only on push actions to the branches in your repository or on tags and not on pull requests).
   - The action runs automatically on a schedule checking updates to the base image using [Differ](https://github.com/Vanilla-OS/Differ).
 - `.github/workflows/release.yml`: This file contains the GitHub Actions workflow to automatically create a GitHub release when a tag is created and it uploads the generated Containerfile to the release for future reference.
+- `.github/workflows/sync-upstream.yml`: This workflow automatically syncs with the upstream template repository to keep your repository up to date with the latest improvements and fixes from the Vanilla OS team.
 - `.github/dependabot.yml`: This file contains the configuration for GitHub's Dependabot to check for updates to the GitHub actions used in the workflow files monthly and when it finds a new version it creates a PR in your repository.
 - `includes.container`: The files included in this directory are added by default to your image to the specified location (**Note**: It also contains ABRoot's configuration file).
 - `modules`: This directory contains the modules that are used to customize the image. You can add your modules to this directory.
