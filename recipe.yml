@@ -33,11 +33,11 @@ stages:
       - fish
       - docker.io
       - docker-cli
-      - btop
+      - mesa-vulkan-drivers
       - bpytop
       - net-tools
-      - kitty-terminfo
-
+      - kitty
+      
   - name: example-commands # Sample module demonstrating the Shell module with custom commands
     type: shell
     commands:
